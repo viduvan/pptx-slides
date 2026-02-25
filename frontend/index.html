@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Odin Slides — AI Presentation Generator</title>
+    <meta name="description" content="Generate stunning PowerPoint presentations using AI. Upload documents, write prompts, preview and download slides instantly.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- ═══ TOP NAV ═══ -->
+    <nav class="topnav">
+        <div class="topnav__brand">
+            <svg class="topnav__logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span class="topnav__title">Odin Slides</span>
+        </div>
+        <div class="topnav__status" id="statusBadge">
+            <span class="status-dot"></span>
+            <span id="statusText">Ready</span>
+        </div>
+    </nav>
+
+    <div class="app">
+        <!-- ═══ LEFT SIDEBAR ═══ -->
+        <aside class="sidebar" id="sidebar">
+            <!-- Upload Area -->
+            <div class="sidebar__section">
+                <h3 class="sidebar__heading">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload Document
+                </h3>
+                <div class="upload-zone" id="uploadZone">
+                    <input type="file" id="fileInput" accept=".docx" hidden>
+                    <svg class="upload-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <p class="upload-zone__text">Drag & drop <strong>.docx</strong> here</p>
+                    <p class="upload-zone__hint">or click to browse</p>
+                </div>
+                <div class="upload-status" id="uploadStatus" hidden>
+                    <div class="upload-status__file">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span id="fileName">document.docx</span>
+                        <button class="btn-icon" id="removeFile" title="Remove file">×</button>
+                    </div>
+                    <p class="upload-status__info" id="uploadInfo"></p>
+                </div>
+            </div>
+
+            <!-- Prompt Area -->
+            <div class="sidebar__section sidebar__section--grow">
+                <h3 class="sidebar__heading">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Prompt
+                </h3>
+                <textarea class="prompt-input" id="promptInput" placeholder="Describe your presentation...&#10;&#10;E.g.: Create 5 slides about the future of AI in healthcare, including an intro, key technologies, challenges, case studies, and conclusion."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="sidebar__actions">
+                <button class="btn btn--primary btn--full" id="generateBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                    Generate Slides
+                </button>
+            </div>
+        </aside>
+
+        <!-- ═══ MAIN CONTENT ═══ -->
+        <main class="main" id="mainContent">
+            <!-- Empty State -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h2 class="empty-state__title">Create Your Presentation</h2>
+                <p class="empty-state__desc">Upload a document or write a prompt to get started.<br>AI will generate beautiful slides for you.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-state" id="loadingState" hidden>
+                <div class="loading-spinner"></div>
+                <p class="loading-state__text" id="loadingText">Generating slides with AI...</p>
+            </div>
+
+            <!-- Slide Preview Area -->
+            <div class="slides-area" id="slidesArea" hidden>
+                <div class="slides-header">
+                    <h2 class="slides-header__title">
+                        <span id="slideCount">0</span> Slides
+                    </h2>
+                    <div class="slides-header__actions">
+                        <button class="btn btn--ghost" id="undoBtn" title="Undo last edit">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                            Undo
+                        </button>
+                        <button class="btn btn--accent" id="downloadBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download PPTX
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Slide Cards Grid -->
+                <div class="slides-grid" id="slidesGrid"></div>
+
+                <!-- Edit Panel -->
+                <div class="edit-panel">
+                    <div class="edit-panel__inner">
+                        <textarea class="edit-input" id="editInput" placeholder="Describe what you want to change... E.g.: Add more details to slide 3, remove slide 5, add a new slide about market trends after slide 2"></textarea>
+                        <button class="btn btn--primary" id="editBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Edit Slides
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══ Slide Detail Modal ═══ -->
+    <div class="modal-overlay" id="slideModal" hidden>
+        <div class="modal">
+            <div class="modal__header">
+                <h3 class="modal__title" id="modalTitle">Slide 1</h3>
+                <button class="btn-icon modal__close" id="modalClose">×</button>
+            </div>
+            <div class="modal__body">
+                <div class="modal__field">
+                    <label>Title</label>
+                    <div class="modal__content" id="modalSlideTitle"></div>
+                </div>
+                <div class="modal__field">
+                    <label>Content</label>
+                    <div class="modal__content modal__content--large" id="modalSlideContent"></div>
+                </div>
+                <div class="modal__field" id="modalNarrationField">
+                    <label>Narration / Notes</label>
+                    <div class="modal__content" id="modalSlideNarration"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Toast Notifications ═══ -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

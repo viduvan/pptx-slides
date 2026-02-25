@@ -1,0 +1,453 @@
+/**
+ * Odin Slides — Frontend Application
+ * Handles file upload, slide generation, preview, editing, and download.
+ */
+
+const API_BASE = window.location.origin;
+
+// ── State ──────────────────────────────────────────────────
+const state = {
+    sessionId: null,
+    slides: [],
+    wordContent: '',
+    isLoading: false,
+};
+
+// ── DOM Elements ───────────────────────────────────────────
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+const dom = {
+    // Upload
+    uploadZone: $('#uploadZone'),
+    fileInput: $('#fileInput'),
+    uploadStatus: $('#uploadStatus'),
+    fileName: $('#fileName'),
+    removeFile: $('#removeFile'),
+    uploadInfo: $('#uploadInfo'),
+
+    // Prompt & Actions
+    promptInput: $('#promptInput'),
+    generateBtn: $('#generateBtn'),
+
+    // Main Content
+    emptyState: $('#emptyState'),
+    loadingState: $('#loadingState'),
+    loadingText: $('#loadingText'),
+    slidesArea: $('#slidesArea'),
+    slideCount: $('#slideCount'),
+    slidesGrid: $('#slidesGrid'),
+
+    // Edit
+    editInput: $('#editInput'),
+    editBtn: $('#editBtn'),
+    undoBtn: $('#undoBtn'),
+    downloadBtn: $('#downloadBtn'),
+
+    // Modal
+    slideModal: $('#slideModal'),
+    modalTitle: $('#modalTitle'),
+    modalSlideTitle: $('#modalSlideTitle'),
+    modalSlideContent: $('#modalSlideContent'),
+    modalSlideNarration: $('#modalSlideNarration'),
+    modalNarrationField: $('#modalNarrationField'),
+    modalClose: $('#modalClose'),
+
+    // Status
+    statusBadge: $('#statusBadge'),
+    statusText: $('#statusText'),
+    statusDot: $('.status-dot'),
+
+    // Toast
+    toastContainer: $('#toastContainer'),
+};
+
+// ── Initialization ─────────────────────────────────────────
+function init() {
+    setupUpload();
+    setupGenerate();
+    setupEdit();
+    setupModal();
+    setupKeyboard();
+}
+
+// ── Upload Handling ────────────────────────────────────────
+function setupUpload() {
+    // Click to upload
+    dom.uploadZone.addEventListener('click', () => dom.fileInput.click());
+
+    // File input change
+    dom.fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) uploadFile(e.target.files[0]);
+    });
+
+    // Drag & Drop
+    dom.uploadZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dom.uploadZone.classList.add('drag-over');
+    });
+
+    dom.uploadZone.addEventListener('dragleave', () => {
+        dom.uploadZone.classList.remove('drag-over');
+    });
+
+    dom.uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dom.uploadZone.classList.remove('drag-over');
+        if (e.dataTransfer.files.length > 0) uploadFile(e.dataTransfer.files[0]);
+    });
+
+    // Remove file
+    dom.removeFile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        state.wordContent = '';
+        dom.uploadZone.hidden = false;
+        dom.uploadStatus.hidden = true;
+        dom.fileInput.value = '';
+    });
+}
+
+async function uploadFile(file) {
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+        showToast('Only .docx files are supported', 'error');
+        return;
+    }
+
+    setStatus('Uploading...', 'loading');
+    dom.fileName.textContent = file.name;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+        const res = await fetch(`${API_BASE}/api/upload/docx`, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Upload failed');
+        }
+
+        const data = await res.json();
+        state.wordContent = data.word_content;
+
+        dom.uploadZone.hidden = true;
+        dom.uploadStatus.hidden = false;
+        dom.uploadInfo.textContent = `${data.word_count} words${data.was_summarized ? ' (summarized)' : ''}`;
+
+        setStatus('Ready', 'ready');
+        showToast(`Document uploaded: ${file.name}`, 'success');
+
+    } catch (err) {
+        setStatus('Upload failed', 'error');
+        showToast(`Upload error: ${err.message}`, 'error');
+        setTimeout(() => setStatus('Ready', 'ready'), 3000);
+    }
+}
+
+// ── Generate Slides ────────────────────────────────────────
+function setupGenerate() {
+    dom.generateBtn.addEventListener('click', generateSlides);
+
+    // Ctrl+Enter to generate
+    dom.promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            generateSlides();
+        }
+    });
+}
+
+async function generateSlides() {
+    const prompt = dom.promptInput.value.trim();
+    if (!prompt) {
+        showToast('Please enter a prompt first', 'error');
+        dom.promptInput.focus();
+        return;
+    }
+
+    showLoading('Generating slides with AI...');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/slides/generate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                word_content: state.wordContent,
+            }),
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Generation failed');
+        }
+
+        const data = await res.json();
+        state.sessionId = data.session_id;
+        state.slides = data.slides;
+
+        renderSlides();
+        setStatus('Ready', 'ready');
+        showToast(data.message, 'success');
+
+    } catch (err) {
+        hideLoading();
+        setStatus('Error', 'error');
+        showToast(`Error: ${err.message}`, 'error');
+        setTimeout(() => setStatus('Ready', 'ready'), 3000);
+    }
+}
+
+// ── Edit Slides ────────────────────────────────────────────
+function setupEdit() {
+    dom.editBtn.addEventListener('click', editSlides);
+    dom.undoBtn.addEventListener('click', undoSlides);
+    dom.downloadBtn.addEventListener('click', downloadSlides);
+
+    // Ctrl+Enter to edit
+    dom.editInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            editSlides();
+        }
+    });
+}
+
+async function editSlides() {
+    const prompt = dom.editInput.value.trim();
+    if (!prompt) {
+        showToast('Please describe what to change', 'error');
+        dom.editInput.focus();
+        return;
+    }
+    if (!state.sessionId) {
+        showToast('No active session. Generate slides first.', 'error');
+        return;
+    }
+
+    showLoading('Editing slides with AI...');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/slides/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: state.sessionId,
+                prompt,
+            }),
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Edit failed');
+        }
+
+        const data = await res.json();
+        state.slides = data.slides;
+
+        dom.editInput.value = '';
+        renderSlides();
+        setStatus('Ready', 'ready');
+        showToast(data.message, 'success');
+
+    } catch (err) {
+        hideLoading();
+        setStatus('Error', 'error');
+        showToast(`Error: ${err.message}`, 'error');
+        setTimeout(() => setStatus('Ready', 'ready'), 3000);
+    }
+}
+
+async function undoSlides() {
+    if (!state.sessionId) return;
+
+    setStatus('Undoing...', 'loading');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/slides/${state.sessionId}/undo`, {
+            method: 'POST',
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Undo failed');
+        }
+
+        const data = await res.json();
+        state.slides = data.slides;
+
+        renderSlides();
+        setStatus('Ready', 'ready');
+        showToast('Reverted to previous version', 'info');
+
+    } catch (err) {
+        setStatus('Error', 'error');
+        showToast(`Error: ${err.message}`, 'error');
+        setTimeout(() => setStatus('Ready', 'ready'), 3000);
+    }
+}
+
+async function downloadSlides() {
+    if (!state.sessionId) return;
+
+    setStatus('Preparing download...', 'loading');
+
+    try {
+        const res = await fetch(`${API_BASE}/api/slides/${state.sessionId}/download`);
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Download failed');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'odin_slides_presentation.pptx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        setStatus('Ready', 'ready');
+        showToast('Presentation downloaded!', 'success');
+
+    } catch (err) {
+        setStatus('Error', 'error');
+        showToast(`Download error: ${err.message}`, 'error');
+        setTimeout(() => setStatus('Ready', 'ready'), 3000);
+    }
+}
+
+// ── Render Slides ──────────────────────────────────────────
+function renderSlides() {
+    dom.emptyState.hidden = true;
+    dom.loadingState.hidden = true;
+    dom.slidesArea.hidden = false;
+    dom.slideCount.textContent = state.slides.length;
+
+    dom.slidesGrid.innerHTML = '';
+
+    state.slides.forEach((slide, index) => {
+        const card = document.createElement('div');
+        card.className = 'slide-card';
+        card.style.animationDelay = `${index * 60}ms`;
+
+        card.innerHTML = `
+            <div class="slide-card__header">
+                <span class="slide-card__number">Slide ${slide.slide_number}</span>
+                <div class="slide-card__actions">
+                    <button class="btn-icon" title="View details">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="slide-card__body">
+                <div class="slide-card__title">${escapeHtml(slide.title)}</div>
+                <div class="slide-card__content">${escapeHtml(slide.content)}</div>
+            </div>
+        `;
+
+        card.addEventListener('click', () => openSlideModal(slide));
+        dom.slidesGrid.appendChild(card);
+    });
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function setupModal() {
+    dom.modalClose.addEventListener('click', closeModal);
+    dom.slideModal.addEventListener('click', (e) => {
+        if (e.target === dom.slideModal) closeModal();
+    });
+}
+
+function openSlideModal(slide) {
+    dom.modalTitle.textContent = `Slide ${slide.slide_number}`;
+    dom.modalSlideTitle.textContent = slide.title || '(No title)';
+    dom.modalSlideContent.textContent = slide.content || '(No content)';
+
+    if (slide.narration && slide.narration.trim()) {
+        dom.modalNarrationField.hidden = false;
+        dom.modalSlideNarration.textContent = slide.narration;
+    } else {
+        dom.modalNarrationField.hidden = true;
+    }
+
+    dom.slideModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+    dom.slideModal.hidden = true;
+    document.body.style.overflow = '';
+}
+
+// ── Keyboard Shortcuts ─────────────────────────────────────
+function setupKeyboard() {
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (!dom.slideModal.hidden) closeModal();
+        }
+    });
+}
+
+// ── UI Helpers ─────────────────────────────────────────────
+function showLoading(text) {
+    state.isLoading = true;
+    dom.emptyState.hidden = true;
+    dom.slidesArea.hidden = true;
+    dom.loadingState.hidden = false;
+    dom.loadingText.textContent = text;
+    dom.generateBtn.disabled = true;
+    dom.editBtn.disabled = true;
+    setStatus(text, 'loading');
+}
+
+function hideLoading() {
+    state.isLoading = false;
+    dom.loadingState.hidden = true;
+    dom.generateBtn.disabled = false;
+    dom.editBtn.disabled = false;
+
+    if (state.slides.length > 0) {
+        dom.slidesArea.hidden = false;
+    } else {
+        dom.emptyState.hidden = false;
+    }
+}
+
+function setStatus(text, type = 'ready') {
+    dom.statusText.textContent = text;
+    dom.statusDot.className = 'status-dot';
+    if (type === 'loading') dom.statusDot.classList.add('loading');
+    if (type === 'error') dom.statusDot.classList.add('error');
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    toast.textContent = message;
+    dom.toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ── Start ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', init);
