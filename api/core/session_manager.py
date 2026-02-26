@@ -20,6 +20,7 @@ class SessionData:
         self.slide_history: list[list[dict]] = []
         self.word_content: str = ""
         self.template_name: str | None = None
+        self.theme: str | None = None
         self.created_at: datetime = datetime.now(timezone.utc)
         self.last_accessed: float = time.time()
 

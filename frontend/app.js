@@ -11,6 +11,7 @@ const state = {
     slides: [],
     wordContent: '',
     isLoading: false,
+    selectedTheme: 'auto',
 };
 
 // ── DOM Elements ───────────────────────────────────────────
@@ -60,6 +61,9 @@ const dom = {
 
     // Toast
     toastContainer: $('#toastContainer'),
+
+    // Theme
+    themeSelector: $('#themeSelector'),
 };
 
 // ── Initialization ─────────────────────────────────────────
@@ -69,6 +73,7 @@ function init() {
     setupEdit();
     setupModal();
     setupKeyboard();
+    loadThemes();
 }
 
 // ── Upload Handling ────────────────────────────────────────
@@ -108,8 +113,9 @@ function setupUpload() {
 }
 
 async function uploadFile(file) {
-    if (!file.name.toLowerCase().endsWith('.docx')) {
-        showToast('Only .docx files are supported', 'error');
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['docx', 'pdf'].includes(ext)) {
+        showToast('Only .docx and .pdf files are supported', 'error');
         return;
     }
 
@@ -120,7 +126,7 @@ async function uploadFile(file) {
     formData.append('file', file);
 
     try {
-        const res = await fetch(`${API_BASE}/api/upload/docx`, {
+        const res = await fetch(`${API_BASE}/api/upload/document`, {
             method: 'POST',
             body: formData,
         });
@@ -177,6 +183,7 @@ async function generateSlides() {
             body: JSON.stringify({
                 prompt,
                 word_content: state.wordContent,
+                theme: state.selectedTheme,
             }),
         });
 
@@ -190,6 +197,7 @@ async function generateSlides() {
         state.slides = data.slides;
 
         renderSlides();
+        hideLoading();
         setStatus('Ready', 'ready');
         showToast(data.message, 'success');
 
@@ -250,6 +258,7 @@ async function editSlides() {
 
         dom.editInput.value = '';
         renderSlides();
+        hideLoading();
         setStatus('Ready', 'ready');
         showToast(data.message, 'success');
 
@@ -307,7 +316,7 @@ async function downloadSlides() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'odin_slides_presentation.pptx';
+        a.download = 'slides_presentation_VietPV.pptx';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -447,6 +456,47 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ── Theme Selector ─────────────────────────────────────────
+async function loadThemes() {
+    try {
+        const res = await fetch(`${API_BASE}/api/slides/themes`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const container = dom.themeSelector;
+
+        data.themes.forEach(theme => {
+            const btn = document.createElement('button');
+            btn.className = 'theme-option';
+            btn.dataset.theme = theme.id;
+            btn.title = theme.label;
+            btn.innerHTML = `
+                <span class="theme-option__color" style="background: linear-gradient(135deg, ${theme.accent}, ${theme.bg});">${theme.emoji}</span>
+                <span class="theme-option__label">${theme.label}</span>
+            `;
+            container.appendChild(btn);
+        });
+
+        // Click handlers for all theme buttons
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.theme-option');
+            if (!btn) return;
+            selectTheme(btn.dataset.theme);
+        });
+
+    } catch (err) {
+        console.warn('Failed to load themes:', err);
+    }
+}
+
+function selectTheme(themeId) {
+    state.selectedTheme = themeId;
+    // Update active state
+    dom.themeSelector.querySelectorAll('.theme-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === themeId);
+    });
 }
 
 // ── Start ──────────────────────────────────────────────────

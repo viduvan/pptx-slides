@@ -49,13 +49,21 @@
     --topnav-height: 56px;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-html, body {
+/* Ensure HTML hidden attribute is always respected */
+[hidden] {
+    display: none !important;
+}
+
+html,
+body {
     height: 100%;
     font-family: var(--font);
     background: var(--bg-primary);
@@ -139,8 +147,15 @@ html, body {
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
 }
 
 /* ── App Layout ─────────────────────────────────────────── */
@@ -192,6 +207,71 @@ html, body {
 
 .sidebar__actions {
     padding-top: 8px;
+}
+
+/* ── Theme Selector ────────────────────────────────────── */
+.theme-selector {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px 6px;
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--bg-glass);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font);
+}
+
+.theme-option:hover {
+    border-color: var(--border-medium);
+    background: var(--bg-glass-hover);
+    transform: translateY(-1px);
+}
+
+.theme-option.active {
+    border-color: var(--accent-primary);
+    background: rgba(124, 92, 252, 0.1);
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.theme-option__color {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    transition: transform var(--transition-fast);
+}
+
+.theme-option:hover .theme-option__color {
+    transform: scale(1.1);
+}
+
+.theme-option__label {
+    font-size: 10px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    transition: color var(--transition-fast);
+}
+
+.theme-option:hover .theme-option__label,
+.theme-option.active .theme-option__label {
+    color: var(--text-secondary);
 }
 
 /* ── Upload Zone ────────────────────────────────────────── */
@@ -460,12 +540,21 @@ html, body {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* ── Slides Area ────────────────────────────────────────── */
@@ -523,8 +612,15 @@ html, body {
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .slide-card__header {
@@ -650,8 +746,15 @@ html, body {
 }
 
 @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .modal__header {
@@ -733,22 +836,44 @@ html, body {
     min-width: 280px;
 }
 
-.toast--success { border-left: 3px solid var(--success); }
-.toast--error { border-left: 3px solid var(--error); }
-.toast--info { border-left: 3px solid var(--accent-primary); }
+.toast--success {
+    border-left: 3px solid var(--success);
+}
+
+.toast--error {
+    border-left: 3px solid var(--error);
+}
+
+.toast--info {
+    border-left: 3px solid var(--accent-primary);
+}
 
 .toast.hiding {
     animation: toastOut 0.3s ease forwards;
 }
 
 @keyframes toastIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 @keyframes toastOut {
-    from { opacity: 1; transform: translateX(0); }
-    to { opacity: 0; transform: translateX(20px); }
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateX(20px);
+    }
 }
 
 /* ── Scrollbar ──────────────────────────────────────────── */

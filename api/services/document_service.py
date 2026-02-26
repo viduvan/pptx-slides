@@ -1,5 +1,5 @@
 """
-Document Service — Word file reading and processing.
+Document Service — Word and PDF file reading and processing.
 Extracted from odin_slides/utils.py for API usage.
 """
 import logging
@@ -31,6 +31,30 @@ def read_docx(file_path: str | Path) -> str:
         return full_text
     except Exception as e:
         logger.error(f"Error reading Word file: {e}")
+        raise
+
+
+def read_pdf(file_path: str | Path) -> str:
+    """
+    Read the full text content of a PDF document.
+
+    Args:
+        file_path: Path to the .pdf file.
+
+    Returns:
+        Full text content as a single string.
+    """
+    try:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(str(file_path))
+        full_text = ""
+        for page in reader.pages:
+            text = page.extract_text()
+            if text:
+                full_text += text + "\n"
+        return full_text
+    except Exception as e:
+        logger.error(f"Error reading PDF file: {e}")
         raise
 
 
@@ -81,7 +105,11 @@ async def process_document(
     Returns:
         Tuple of (processed_content, was_summarized).
     """
-    word_content = read_docx(file_path)
+    file_ext = Path(file_path).suffix.lower()
+    if file_ext == ".pdf":
+        word_content = read_pdf(file_path)
+    else:
+        word_content = read_docx(file_path)
     word_count = len(word_content.split())
 
     if word_count <= settings.MAX_WORD_COUNT_WITHOUT_SUMMARIZATION:

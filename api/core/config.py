@@ -1,9 +1,14 @@
 """
 Application configuration.
-Reads settings from environment variables.
+Reads settings from environment variables or .env file.
 """
 import os
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Load .env file from project root (if it exists)
+load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 
 class Settings:
@@ -11,7 +16,7 @@ class Settings:
 
     # Gemini API
     GEMINI_API_KEY: str = os.environ.get("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-3-pro")
+    GEMINI_MODEL: str = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
 
     # File storage
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
@@ -21,12 +26,17 @@ class Settings:
     # Session
     SESSION_TTL_SECONDS: int = int(os.environ.get("SESSION_TTL", "3600"))  # 1 hour
 
+    # Pixabay API (optional, for slide images)
+    PIXABAY_API_KEY: str = os.environ.get("PIXABAY_API_KEY", "")
+    IMAGES_DIR: Path = BASE_DIR / "tmp" / "images"
+
     # Document processing
     MAX_WORD_COUNT_WITHOUT_SUMMARIZATION: int = 5000
 
     def __init__(self):
         self.TEMP_DIR.mkdir(parents=True, exist_ok=True)
         self.TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+        self.IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 settings = Settings()

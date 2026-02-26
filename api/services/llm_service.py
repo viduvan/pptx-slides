@@ -10,6 +10,7 @@ from google import genai
 from google.genai import types
 
 from ..core.config import settings
+from .template_builder import AVAILABLE_THEMES
 
 logger = logging.getLogger("odin_api.llm")
 
@@ -69,11 +70,58 @@ async def summarize_content(text: str) -> str:
         raise
 
 
+def detect_theme_from_prompt(prompt: str) -> str:
+    """
+    Detect the best theme based on keywords in user prompt.
+
+    Maps colors, topics, and moods to available theme presets.
+    """
+    p = prompt.lower()
+
+    # Direct theme name match
+    for theme in AVAILABLE_THEMES:
+        if theme.replace("_", " ") in p or theme in p:
+            return theme
+
+    # Keyword → theme mapping
+    theme_keywords = {
+        "ocean": ["ocean", "sea", "water", "marine", "aqua", "blue", "teal",
+                  "biển", "nước", "xanh dương", "xanh nước"],
+        "forest": ["forest", "nature", "green", "eco", "environment", "plant", "tree",
+                   "rừng", "thiên nhiên", "xanh lá", "cây", "môi trường"],
+        "sunset": ["sunset", "warm", "orange", "fire", "energy", "autumn",
+                   "hoàng hôn", "cam", "ấm", "năng lượng", "lửa"],
+        "midnight": ["tech", "technology", "digital", "ai", "data", "software", "code",
+                     "cyber", "cloud", "server", "database", "engineering", "dev",
+                     "công nghệ", "phần mềm", "kỹ thuật", "lập trình", "dữ liệu"],
+        "crimson": ["medical", "health", "heart", "blood", "emergency", "passion",
+                    "red", "danger", "y tế", "sức khỏe", "đỏ", "y khoa"],
+        "emerald_gold": ["finance", "business", "money", "gold", "luxury", "premium",
+                         "wealth", "investment", "kinh doanh", "tài chính", "vàng", "sang trọng"],
+        "rose": ["fashion", "beauty", "design", "art", "creative", "music", "love",
+                 "pink", "thời trang", "nghệ thuật", "thiết kế", "sáng tạo", "hồng"],
+        "dark_purple": ["space", "universe", "galaxy", "science", "research", "education",
+                        "vũ trụ", "khoa học", "giáo dục", "nghiên cứu"],
+    }
+
+    # Score each theme
+    best_theme = "midnight"  # Default to midnight (good general tech/modern look)
+    best_score = 0
+
+    for theme, keywords in theme_keywords.items():
+        score = sum(1 for kw in keywords if kw in p)
+        if score > best_score:
+            best_score = score
+            best_theme = theme
+
+    return best_theme
+
+
 async def generate_slides(
     prompt: str,
     word_content: str = "",
     existing_slides: list[dict] | None = None,
-) -> list[dict]:
+) -> dict:
     """
     Generate or update slide content using Gemini.
 
@@ -83,7 +131,7 @@ async def generate_slides(
         existing_slides: Optional existing slides for editing.
 
     Returns:
-        List of slide dictionaries with keys: slide_number, title, content, narration.
+        Dict with 'slides' (list of slide dicts) and 'theme' (theme name string).
     """
     client = _get_client()
 
@@ -104,10 +152,15 @@ async def generate_slides(
         'User will ask you to create or update text content for some slides'
         + (' based on the aforementioned Input Article' if word_content else '')
         + '. The response format should be a valid json format structured as this: '
-        '[{"slide_number": <Float>, "title": "<String>", "content": "<String>", "narration": "<String>"},'
-        '{"slide_number": <Float>, "title": "<String>", "content": "<String>", "narration": "<String>"}]\n'
+        '[{"slide_number": <Float>, "title": "<String>", "content": "<String>", "narration": "<String>", "image_keyword": "<String>"},'
+        '{"slide_number": <Float>, "title": "<String>", "content": "<String>", "narration": "<String>", "image_keyword": "<String>"}]\n'
         'The content field in the response should be comprehensive enough as it is the main text of each slide.\n'
-        'For content use a mix of bullet points and text when applicable.\n'
+        'For content use a mix of bullet points (using - prefix) and plain text when applicable.\n'
+        'CRITICAL: Do NOT use any HTML tags (no <ul>, <li>, <b>, <i>, <a>, <p>, <br>, etc.) '
+        'and do NOT use markdown formatting (no **, ##, [](), etc.) in the content or title fields. '
+        'Use ONLY plain text. For bullet points use dash (-) at the start of the line.\n'
+        'Keep the content for each slide concise: aim for 5-8 bullet points or 4-6 short paragraphs maximum '
+        'so it fits neatly on one slide without overflow.\n'
         'If you are modifying an existing slide leave the slide number unchanged '
         'but if you are adding slides to the existing slides, use decimal digits for the slide number. '
         'For example to add a slide after slide 2, use slide number 2.1, 2.2, ...\n'
@@ -132,7 +185,15 @@ async def generate_slides(
     )
     system_parts.append(
         "Response should be valid json in the format described earlier. "
-        "slide_number, title, and content are mandatory keys."
+        "slide_number, title, content, and image_keyword are mandatory keys."
+    )
+    system_parts.append(
+        "The image_keyword field MUST be filled for every slide. "
+        "It should contain 1-2 simple English words that best describe "
+        "a relevant photo for the slide content. Use common, generic terms "
+        "like 'technology', 'landscape', 'business', 'education', 'science', 'computer', "
+        "'teamwork', 'innovation'. Avoid overly specific or compound keywords. "
+        "Every slide MUST have an image_keyword."
     )
 
     system_instruction = "\n\n".join(system_parts)
@@ -169,7 +230,7 @@ async def generate_slides(
             if "narration" not in slide:
                 slide["narration"] = ""
 
-        return parsed
+        return {"slides": parsed, "theme": detect_theme_from_prompt(prompt)}
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON parse error: {e}")

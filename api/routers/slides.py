@@ -16,10 +16,41 @@ from ..models.schemas import (
     UndoRequest,
 )
 from ..services import llm_service, slide_service
+from ..services.template_builder import THEMES, AVAILABLE_THEMES
 from ..core.session_manager import session_manager
 
 logger = logging.getLogger("odin_api.routers.slides")
 router = APIRouter(prefix="/api/slides", tags=["Slides"])
+
+
+# Theme display names and emoji
+THEME_META = {
+    "dark_purple": {"label": "Dark Purple", "emoji": "🔮"},
+    "ocean":       {"label": "Ocean Blue", "emoji": "🌊"},
+    "forest":      {"label": "Forest Green", "emoji": "🌿"},
+    "sunset":      {"label": "Sunset Orange", "emoji": "🌅"},
+    "midnight":    {"label": "Midnight Blue", "emoji": "🌃"},
+    "crimson":     {"label": "Crimson Red", "emoji": "❤️"},
+    "emerald_gold": {"label": "Emerald Gold", "emoji": "💰"},
+    "rose":        {"label": "Rose Pink", "emoji": "🌸"},
+}
+
+
+@router.get("/themes")
+async def list_themes():
+    """Return all available theme presets."""
+    themes = []
+    for key in AVAILABLE_THEMES:
+        meta = THEME_META.get(key, {"label": key.replace('_', ' ').title(), "emoji": "🎨"})
+        colors = THEMES[key]
+        themes.append({
+            "id": key,
+            "label": meta["label"],
+            "emoji": meta["emoji"],
+            "accent": "#{:02x}{:02x}{:02x}".format(*colors["accent"]),
+            "bg": "#{:02x}{:02x}{:02x}".format(*colors["bg_gradient"]),
+        })
+    return {"themes": themes, "default": "auto"}
 
 
 @router.post("/generate", response_model=GenerateResponse)
@@ -29,11 +60,14 @@ async def generate_slides(request: GenerateRequest):
     Optionally provide word_content (from uploaded docx) to base the slides on.
     """
     try:
-        slides = await llm_service.generate_slides(
+        result = await llm_service.generate_slides(
             prompt=request.prompt,
             word_content=request.word_content,
             existing_slides=[],
         )
+        slides = result["slides"]
+        # Use explicitly selected theme, or auto-detected
+        theme = request.theme if request.theme and request.theme != "auto" else result.get("theme")
 
         # Create session
         template_path = slide_service.get_template_path(request.template_name)
@@ -42,6 +76,7 @@ async def generate_slides(request: GenerateRequest):
             word_content=request.word_content,
             template_name=str(template_path),
         )
+        session.theme = theme
 
         return GenerateResponse(
             session_id=session.session_id,
@@ -68,11 +103,15 @@ async def edit_slides(request: EditRequest):
 
     try:
         # Get LLM response for edits
-        new_slides = await llm_service.generate_slides(
+        result = await llm_service.generate_slides(
             prompt=request.prompt,
             word_content=session.word_content,
             existing_slides=session.slides.copy(),
         )
+        new_slides = result["slides"]
+        theme = result.get("theme")
+        if theme:
+            session.theme = theme
 
         # Merge new slides with existing
         merged = slide_service.merge_slides(
@@ -126,10 +165,11 @@ async def download_slides(session_id: str):
 
     try:
         template_path = session.template_name
-        output_path = slide_service.create_pptx(
+        output_path = await slide_service.create_pptx(
             slides=session.slides,
             template_path=template_path,
-            output_path=None,  # auto-generate temp path
+            output_path=None,
+            theme_name=session.theme,
         )
 
         return FileResponse(

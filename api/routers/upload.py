@@ -1,5 +1,5 @@
 """
-Upload Router — Endpoints for uploading and processing Word documents.
+Upload Router — Endpoints for uploading and processing Word and PDF documents.
 """
 import logging
 import shutil
@@ -15,19 +15,36 @@ from ..core.config import settings
 logger = logging.getLogger("odin_api.routers.upload")
 router = APIRouter(prefix="/api/upload", tags=["Upload"])
 
+SUPPORTED_EXTENSIONS = {".docx", ".pdf"}
+
 
 @router.post("/docx", response_model=UploadResponse)
 async def upload_docx(file: UploadFile = File(...)):
+    """Upload a Word document (.docx). Kept for backward compatibility."""
+    return await _process_upload(file, allowed_exts={".docx"})
+
+
+@router.post("/document", response_model=UploadResponse)
+async def upload_document(file: UploadFile = File(...)):
     """
-    Upload a Word document (.docx).
+    Upload a document (.docx or .pdf).
     The document will be read and optionally summarized if it's too large.
     Returns the extracted text content to be used in slide generation.
     """
+    return await _process_upload(file, allowed_exts=SUPPORTED_EXTENSIONS)
+
+
+async def _process_upload(file: UploadFile, allowed_exts: set[str]) -> UploadResponse:
+    """Common upload processing for both docx and pdf."""
     # Validate file type
-    if not file.filename or not file.filename.lower().endswith(".docx"):
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="No filename provided")
+
+    ext = Path(file.filename).suffix.lower()
+    if ext not in allowed_exts:
         raise HTTPException(
             status_code=400,
-            detail="Only .docx files are supported"
+            detail=f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(allowed_exts))}"
         )
 
     # Save uploaded file to temp directory
@@ -66,3 +83,4 @@ async def upload_docx(file: UploadFile = File(...)):
         # Clean up temp file
         if temp_path.exists():
             temp_path.unlink()
+

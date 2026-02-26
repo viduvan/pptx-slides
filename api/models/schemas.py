@@ -13,6 +13,7 @@ class SlideData(BaseModel):
     title: str
     content: str
     narration: str = ""
+    image_keyword: str = ""
 
 
 # ── Requests ────────────────────────────────────────────────
@@ -22,6 +23,7 @@ class GenerateRequest(BaseModel):
     prompt: str = Field(..., description="Prompt describing desired slides")
     word_content: str = Field("", description="Optional document content to base slides on")
     template_name: str | None = Field(None, description="Optional template file name")
+    theme: str | None = Field(None, description="Theme preset name (e.g. 'ocean', 'midnight')")
 
 
 class EditRequest(BaseModel):

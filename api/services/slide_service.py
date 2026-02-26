@@ -62,59 +62,36 @@ def _create_default_template() -> Path:
     return path
 
 
-def create_pptx(
+async def create_pptx(
     slides: list[dict],
     template_path: Path | str | None = None,
     output_path: Path | str | None = None,
+    theme_name: str | None = None,
 ) -> Path:
     """
-    Create a PPTX file from slide data.
+    Create a themed PPTX file from slide data with images.
+
+    Uses template_builder for professional gradient theme and
+    image_service for relevant stock photos.
 
     Args:
-        slides: List of slide dicts with keys: slide_number, title, content, narration.
-        template_path: Path to template PPTX. Uses default if None.
+        slides: List of slide dicts with keys: slide_number, title, content, narration, image_keyword.
+        template_path: Ignored (kept for backward compatibility). Uses themed builder.
         output_path: Where to save. Uses temp file if None.
+        theme_name: Theme preset name (e.g. 'ocean', 'forest', 'sunset').
 
     Returns:
         Path to the created PPTX file.
     """
-    if template_path is None:
-        template_path = get_template_path()
-    template_path = Path(template_path)
+    from .template_builder import build_themed_presentation
+    from .image_service import fetch_images_for_slides
 
-    prs = Presentation(str(template_path))
+    # Fetch images for all slides (graceful: returns {} if no API key)
+    image_paths = await fetch_images_for_slides(slides)
 
-    # Delete all existing slides
-    slides_to_remove = prs.slides._sldIdLst[:]
-    slide_ids_to_remove = [slide.rId for slide in prs.slides._sldIdLst]
-    for slide_id in slide_ids_to_remove:
-        prs.part.drop_rel(slide_id)
-    for slide_id in slides_to_remove:
-        prs.slides._sldIdLst.remove(slide_id)
-
-    # Find "Title and Content" layout
-    layout = _find_most_similar_layout(prs, "Title and Content")
-    if not layout:
-        # Fallback to first layout
-        layout = prs.slide_layouts[0] if prs.slide_layouts else None
-        if not layout:
-            raise ValueError("No slide layouts found in template")
-
-    for slide_data in slides:
-        slide = prs.slides.add_slide(layout)
-
-        # Set title
-        if slide.shapes.title:
-            slide.shapes.title.text = slide_data.get("title", "")
-
-        # Set content
-        content_ph = _find_content_placeholder(slide)
-        if content_ph:
-            content_ph.text = slide_data.get("content", "")
-
-        # Set narration in notes
-        notes_slide = slide.notes_slide
-        notes_slide.notes_text_frame.text = slide_data.get("narration", "")
+    # Build themed presentation
+    prs = build_themed_presentation(slides_data=slides, image_paths=image_paths,
+                                    theme_name=theme_name)
 
     # Determine output path
     if output_path is None:
@@ -122,7 +99,7 @@ def create_pptx(
     output_path = Path(output_path)
 
     prs.save(str(output_path))
-    logger.info(f"Presentation saved to {output_path}")
+    logger.info(f"Themed presentation saved to {output_path} ({len(slides)} slides)")
     return output_path
 
 
@@ -239,5 +216,6 @@ def slides_to_preview(slides: list[dict]) -> list[dict]:
             "title": slide.get("title", ""),
             "content": slide.get("content", ""),
             "narration": slide.get("narration", ""),
+            "image_keyword": slide.get("image_keyword", ""),
         })
     return preview
