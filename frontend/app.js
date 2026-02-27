@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   PPTX Slides — Web Application Frontend
+   PPTX-Slides — Web Application Frontend
    Developed by ChimSe (viduvan) - https://github.com/viduvan
    Completed: February 27, 2026
    ═══════════════════════════════════════════════════════════

@@ -1,6 +1,8 @@
-# PPTX Slides — AI Presentation Generator
+# PPTX-Slides — AI Presentation Generator
 
-**PPTX Slides** is a powerful tool that helps you create professional PowerPoint presentations quickly by leveraging the power of Google Gemini AI. You can generate slides from existing documents or simply by providing text prompts.
+[Tiếng Việt](README_VI.md) | **English**
+
+**PPTX-Slides** is a powerful tool that helps you create professional PowerPoint presentations quickly by leveraging the power of Google Gemini AI. You can generate slides from existing documents or simply by providing text prompts.
 
 ## ✨ Key Features
 
@@ -30,8 +32,8 @@ Requires Python 3.9 or higher.
 
 ```bash
 # Clone the project
-git clone https://github.com/viduvan/pptx-slides
-cd pptx-slides
+git clone https://github.com/viduvan/PPTX-Slides
+cd PPTX-Slides
 
 # Install required libraries
 pip install -r requirements.txt

@@ -1,5 +1,5 @@
 """
-FastAPI Application — Main entry point for the pptx-slides API.
+FastAPI Application — Main entry point for the PPTX-Slides API.
 Serves both the REST API and the frontend UI.
 
 Developed by ChimSe (viduvan) - https://github.com/viduvan
