@@ -13,7 +13,7 @@
 
 ## 📺 Video Demo
 
-![PPPTX Slides Demo Recording](file:///home/vietpv/.gemini/antigravity/brain/b5d2afbb-f6f5-4b99-8a59-31c158e576c3/pptx_slides_demo_1772182588859.webp)
+![PPPTX Slides Demo Recording](assets/demo_recording.webp)
 
 ## 🛠️ Technology Stack
 
