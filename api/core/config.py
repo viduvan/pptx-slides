@@ -1,6 +1,7 @@
 """
 Application configuration.
 Reads settings from environment variables or .env file.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 """
 import os
 from pathlib import Path

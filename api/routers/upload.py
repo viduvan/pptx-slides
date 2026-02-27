@@ -1,5 +1,6 @@
 """
-Upload Router — Endpoints for uploading and processing Word and PDF documents.
+Upload Router — Endpoints for uploading and processing documents.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 """
 import logging
 import shutil

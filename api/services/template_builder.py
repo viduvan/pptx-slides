@@ -1,6 +1,7 @@
 """
-Template Builder — Creates professional themed PPTX presentations.
-
+Template Builder — Logic for creating slide templates with specific themes and layouts.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
+"""
 Features:
   - Multiple theme presets (dark purple, ocean, forest, sunset, midnight, crimson)
   - Gradient backgrounds per theme

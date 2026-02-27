@@ -1,5 +1,6 @@
 """
-Slide Service — PPTX creation, reading, and merge logic.
+Slide Service — Logic for managing PPTX creation, theme application, and merging.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 Extracted and refactored from odin_slides/presentation.py for API usage.
 """
 import difflib
@@ -13,7 +14,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from ..core.config import settings
 
-logger = logging.getLogger("odin_api.slides")
+logger = logging.getLogger("pptx_api.slides")
 
 
 # ── Layout Helpers ──────────────────────────────────────────

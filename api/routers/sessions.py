@@ -1,5 +1,6 @@
 """
-Sessions Router — Endpoints for managing sessions.
+Sessions Router — Endpoints for managing user sessions.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 """
 import logging
 

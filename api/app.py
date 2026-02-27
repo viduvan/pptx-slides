@@ -1,6 +1,9 @@
 """
-FastAPI Application — Main entry point for the odin-slides API.
+FastAPI Application — Main entry point for the pptx-slides API.
 Serves both the REST API and the frontend UI.
+
+Developed by ChimSe (viduvan) - https://github.com/viduvan
+Completed: February 27, 2026
 """
 import logging
 from contextlib import asynccontextmanager
@@ -19,7 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
-logger = logging.getLogger("odin_api")
+logger = logging.getLogger("pptx_api")
 
 # Frontend directory
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
@@ -29,7 +32,7 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 async def lifespan(app: FastAPI):
     """Application lifespan: setup and teardown."""
     # Startup
-    logger.info("Odin-Slides API starting up...")
+    logger.info("PPTX-Slides API starting up...")
     logger.info(f"Temp directory: {settings.TEMP_DIR}")
     logger.info(f"Templates directory: {settings.TEMPLATES_DIR}")
     logger.info(f"Gemini model: {settings.GEMINI_MODEL}")
@@ -41,7 +44,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    logger.info("Odin-Slides API shutting down...")
+    logger.info("PPTX-Slides API shutting down...")
     # Clean up temp files
     if settings.TEMP_DIR.exists():
         for f in settings.TEMP_DIR.glob("presentation_*.pptx"):
@@ -53,7 +56,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Odin-Slides API",
+    title="PPTX-Slides API",
     description=(
         "REST API for generating PowerPoint presentations using Google Gemini AI. "
         "Upload Word documents, generate slides from prompts, edit interactively, "
@@ -90,7 +93,7 @@ async def serve_frontend():
     if index_path.exists():
         return HTMLResponse(content=index_path.read_text(encoding="utf-8"))
     return HTMLResponse(
-        content="<h1>Odin-Slides API</h1><p>Frontend not found. Visit <a href='/docs'>/docs</a> for API docs.</p>"
+        content="<h1>PPTX-Slides API</h1><p>Frontend not found. Visit <a href='/docs'>/docs</a> for API docs.</p>"
     )
 
 

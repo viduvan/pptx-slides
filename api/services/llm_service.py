@@ -1,6 +1,8 @@
 """
 LLM Service — Google Gemini API integration (using google-genai SDK).
 Replaces the OpenAI-based llm_ops.py for the API backend.
+
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 """
 import json
 import logging

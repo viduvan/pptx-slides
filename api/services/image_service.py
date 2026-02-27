@@ -1,5 +1,6 @@
 """
-Image Service — Fetches relevant images from Pixabay API for slide content.
+Image Service — Logic for searching and downloading images via Pixabay API.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 
 Falls back gracefully: returns None if no API key or fetch fails.
 """

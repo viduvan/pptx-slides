@@ -1,6 +1,8 @@
 """
-Run the Odin-Slides API server.
-
+Run Script — Entry point to start the PPTX-Slides API server.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
+Completed: February 27, 2026
+"""
 Usage:
     python run.py
     

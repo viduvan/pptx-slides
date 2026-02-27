@@ -1,5 +1,6 @@
 """
 Slides Router — Endpoints for generating, editing, previewing, and downloading slides.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 """
 import logging
 from pathlib import Path

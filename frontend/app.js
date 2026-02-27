@@ -1,6 +1,9 @@
-/**
- * Odin Slides — Frontend Application
- * Handles file upload, slide generation, preview, editing, and download.
+/* ═══════════════════════════════════════════════════════════
+   PPTX Slides — Web Application Frontend
+   Developed by ChimSe (viduvan) - https://github.com/viduvan
+   Completed: February 27, 2026
+   ═══════════════════════════════════════════════════════════
+   Handles file upload, slide generation, preview, editing, and download.
  */
 
 const API_BASE = window.location.origin;

@@ -1,5 +1,6 @@
 """
-Document Service — Word and PDF file reading and processing.
+Document Service — Logic for reading and parsing Word (.docx) and PDF (.pdf) files.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
 Extracted from odin_slides/utils.py for API usage.
 """
 import logging
@@ -10,7 +11,7 @@ from docx import Document
 
 from ..core.config import settings
 
-logger = logging.getLogger("odin_api.document")
+logger = logging.getLogger("pptx_api.docs")
 
 
 def read_docx(file_path: str | Path) -> str:

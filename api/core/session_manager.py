@@ -68,7 +68,10 @@ class SessionManager:
         return session
 
     def update_slides(self, session_id: str, slides: list[dict]) -> SessionData | None:
-        """Update slides for a session and push to history."""
+        """
+Session Manager — Logic for handling user sessions and slide state persistence.
+Developed by ChimSe (viduvan) - https://github.com/viduvan
+"""
         session = self.get_session(session_id)
         if session is None:
             return None
